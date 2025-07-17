@@ -3,8 +3,8 @@ This is chess game written in rust
 ## Features to Implement:
 - [x]  chess layout
 - [x]  pieces movement
-- [ ]  check condition
-- [ ]  kings movement restriction
+- [x]  check condition
+- [x]  kings movement restriction
 - [ ]  winning condition
 - [ ]  draw conditions
 - [ ]  castling

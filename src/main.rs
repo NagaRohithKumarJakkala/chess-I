@@ -84,7 +84,11 @@ struct Board{
     width:usize,
     height:usize,
     pieces:Vec<Vec<PieceType>>,
-    spritesheet:Texture2D
+    spritesheet:Texture2D,
+    white_king_x:usize,
+    white_king_y:usize,
+    black_king_x:usize,
+    black_king_y:usize,
 }
 
 
@@ -103,7 +107,11 @@ impl Board{
                 vec![E,E,E,E,E,E,E,E],
                 vec![W,W,W,W,W,W,W,W],
                 vec![WR,WN,WB,WQ,WK,WB,WN,WR]
-            ]
+            ],
+            white_king_x:4,
+            white_king_y:7,
+            black_king_x:4,
+            black_king_y:0,
         }
     }
     fn draw(&self) {
@@ -126,6 +134,287 @@ impl Board{
 
     fn is_white_piece(&self,x:usize,y:usize)->bool{
         matches!( self.pieces[y][x],W|WK|WQ|WR|WN|WB)
+    }
+
+    fn is_white_king_in_check(&self,x:usize,y:usize)->bool{
+        // straight line check
+        for i in (0..x).rev(){
+            if self.pieces[y][i] != E{
+                if self.pieces[y][i] == BR || self.pieces[y][i] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in x+1..self.width{
+            if self.pieces[y][i] != E{
+                if self.pieces[y][i] == BR || self.pieces[y][i] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in (0..y).rev(){
+            if self.pieces[i][x] != E{
+                if self.pieces[i][x] == BR || self.pieces[i][x] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in y+1..self.height{
+            if self.pieces[i][x] != E{
+                if self.pieces[i][x] == BR || self.pieces[i][x] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+
+        // diagonal cheking
+        
+        let mut curr_x = (x+1) as i32;
+        let mut curr_y = (y+1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == BB || self.pieces[curr_y as usize][curr_x as usize] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x+= 1; 
+           curr_y+= 1; 
+        }
+        let mut curr_x = (x-1) as i32;
+        let mut curr_y = (y+1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == BB || self.pieces[curr_y as usize][curr_x as usize] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x-= 1; 
+           curr_y+= 1; 
+        }
+        let mut curr_x = (x+1) as i32;
+        let mut curr_y = (y-1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == BB || self.pieces[curr_y as usize][curr_x as usize] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x+= 1; 
+           curr_y-= 1; 
+        }
+        let mut curr_x = (x-1) as i32;
+        let mut curr_y = (y-1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == BB || self.pieces[curr_y as usize][curr_x as usize] == BQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x-= 1; 
+           curr_y-= 1; 
+        }
+
+        // for the knight
+
+        let diffs = [(2,1),(-2,1),(2,-1),(-2,-1),(1,2),(-1,2),(1,-2),(-1,-2)];
+        let curr_x = x as i32;
+        let curr_y = y as i32;
+
+        for diff in diffs{
+            if curr_x+diff.0 <self.width as i32 && curr_x+diff.0>=0 &&
+                curr_y+diff.1<self.height as i32 && curr_y+diff.1>=0 &&
+                self.pieces[(curr_y+diff.1 )as usize][(curr_x+diff.0) as usize] == BN{
+                    return true;
+            }
+        }
+
+        // king check
+        let diffs = [(1,1),(-1,1),(1,-1),(-1,-1),(1,0),(-1,0),(0,-1),(0,1)];
+
+        for diff in diffs{
+            if curr_x+diff.0 <self.width as i32 && curr_x+diff.0>=0 &&
+                curr_y+diff.1<self.height as i32 && curr_y+diff.1>=0 &&
+                self.pieces[(curr_y+diff.1 )as usize][(curr_x+diff.0) as usize] == BK{
+                    return true;
+            }
+        }
+
+        // pawn check
+
+        if curr_y-1>=0 as i32 &&
+            (((curr_x-1)>=0 && self.pieces[(curr_y-1) as usize][(curr_x-1) as usize]==B)||
+             curr_x+1<self.width as i32 && self.pieces[(curr_y-1)as usize][(curr_x+1) as usize]==B){
+            return true;
+        }
+        false
+    }
+    fn is_black_king_in_check(&self,x:usize,y:usize)->bool{
+        // straight line check
+        for i in (0..x).rev(){
+            if self.pieces[y][i] != E{
+                if self.pieces[y][i] == WR || self.pieces[y][i] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in x+1..self.width{
+            if self.pieces[y][i] != E{
+                if self.pieces[y][i] == WR || self.pieces[y][i] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in (0..y).rev(){
+            if self.pieces[i][x] != E{
+                if self.pieces[i][x] == WR || self.pieces[i][x] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+        for i in y+1..self.height{
+            if self.pieces[i][x] != E{
+                if self.pieces[i][x] == WR || self.pieces[i][x] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+            }
+        } 
+
+        // diagonal cheking
+        
+        let mut curr_x = (x+1) as i32;
+        let mut curr_y = (y+1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == WB || self.pieces[curr_y as usize][curr_x as usize] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x+= 1; 
+           curr_y+= 1; 
+        }
+        let mut curr_x = x as i32 -1;
+        let mut curr_y = (y+1) as i32;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == WB || self.pieces[curr_y as usize][curr_x as usize] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x-= 1; 
+           curr_y+= 1; 
+        }
+        let mut curr_x = (x+1) as i32;
+        let mut curr_y = y as i32 -1;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == WB || self.pieces[curr_y as usize][curr_x as usize] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x+= 1; 
+           curr_y-= 1; 
+        }
+        let mut curr_x = x as i32 -1;
+        let mut curr_y = y as i32 -1;
+
+        while curr_x<(self.width as i32) && curr_y<(self.height as i32) && curr_y>=0 && curr_x>=0{
+           if self.pieces[curr_y as usize][curr_x as usize] != E{
+                if self.pieces[curr_y as usize][curr_x as usize] == WB || self.pieces[curr_y as usize][curr_x as usize] == WQ{
+                    return true;
+                }
+                else{
+                    break;
+                }
+           }
+           curr_x-= 1; 
+           curr_y-= 1; 
+        }
+
+        // for the knight
+
+        let diffs = [(2,1),(-2,1),(2,-1),(-2,-1),(1,2),(-1,2),(1,-2),(-1,-2)];
+        let curr_x = x as i32;
+        let curr_y = y as i32;
+
+        for diff in diffs{
+            if curr_x+diff.0 <self.width as i32 && curr_x+diff.0>=0 &&
+                curr_y+diff.1<self.height as i32 && curr_y+diff.1>=0 &&
+                self.pieces[(curr_y+diff.1 )as usize][(curr_x+diff.0) as usize] == WN{
+                    return true;
+            }
+        }
+
+        // king check
+        let diffs = [(1,1),(-1,1),(1,-1),(-1,-1),(1,0),(-1,0),(0,-1),(0,1)];
+
+        for diff in diffs{
+            if curr_x+diff.0 <self.width as i32 && curr_x+diff.0>=0 &&
+                curr_y+diff.1<self.height as i32 && curr_y+diff.1>=0 &&
+                self.pieces[(curr_y+diff.1 )as usize][(curr_x+diff.0) as usize] == WK{
+                    return true;
+            }
+        }
+
+        // pawn check
+
+        if (curr_y+1) <self.height as i32 &&
+            (((curr_x-1)>=0 && self.pieces[(curr_y+1) as usize][(curr_x-1) as usize]==W)||
+             (curr_x+1<self.width as i32 && self.pieces[(curr_y+1) as usize][(curr_x+1)as usize]==W)){
+            return true;
+        }
+        false
     }
 
 }
@@ -492,11 +781,50 @@ impl Game{
                 if x==self.selected_x && y == self.selected_y{
 
                 }else if self.is_reachable(x, y){
+                    let removed_piece = self.board.pieces[y][x];
                     self.board.pieces[y][x] = self.board.pieces[self.selected_y][self.selected_x];
                     self.board.pieces[self.selected_y][self.selected_x]=E;
-                    self.turn = match self.turn{
-                        Turn::White=>Turn::Black,
-                        Turn::Black=>Turn::White
+
+                    if self.board.pieces[y][x] == WK{
+                        self.board.white_king_x = x;
+                        self.board.white_king_y = y;
+                    }
+
+                    if self.board.pieces[y][x] ==BK{
+                        self.board.black_king_x = x;
+                        self.board.black_king_y = y;
+                    }
+                    let in_check =match self.turn{
+                        Turn::White=>self.board.is_white_king_in_check(self.board.white_king_x,self.board.white_king_y),
+                        Turn::Black=>self.board.is_black_king_in_check(self.board.black_king_x,self.board.black_king_y)
+                    };
+
+                    if in_check{
+                        if self.board.pieces[y][x] == WK{
+                            self.board.white_king_x=self.selected_x;
+                            self.board.white_king_y=self.selected_y;
+                        }else if self.board.pieces[y][x] == BK{
+                            self.board.black_king_x=self.selected_x;
+                            self.board.black_king_y=self.selected_y;
+                        }
+                        self.board.pieces[self.selected_y][self.selected_x]=self.board.pieces[y][x];
+                        self.board.pieces[y][x]=removed_piece;
+                        
+                    }
+                    else{
+
+                        if self.board.pieces[y][x] == WK{
+                            self.board.white_king_x = x;
+                            self.board.white_king_y = y;
+                        }
+                        if self.board.pieces[y][x] == BK{
+                            self.board.black_king_x = x;
+                            self.board.black_king_y = y;
+                        }
+                        self.turn = match self.turn{
+                            Turn::White=>Turn::Black,
+                            Turn::Black=>Turn::White
+                        }
                     }
                 }
                 self.selected=false;
