@@ -7,6 +7,7 @@ This is chess game written in rust
 - [x]  kings movement restriction
 - [ ]  winning condition
 - [ ]  draw conditions
+- [ ]  pawn promotion
 - [ ]  castling
 - [ ]  en-passant
 - [ ]  ui for players
