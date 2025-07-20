@@ -5,7 +5,7 @@ This is chess game written in rust
 - [x]  pieces movement
 - [x]  check condition
 - [x]  kings movement restriction
-- [ ]  winning condition
+- [x]  winning condition
 - [ ]  draw conditions
 - [ ]  castling
 - [ ]  en-passant

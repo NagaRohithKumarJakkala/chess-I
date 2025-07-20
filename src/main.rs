@@ -1,10 +1,11 @@
 use macroquad::prelude::*;
+use macroquad::ui::{hash, root_ui, widgets};
 const BLOCKSIZE: f32 = 75.0;
 const SPRITESIZE: f32 = 45.0;
 const BUFF: f32 = 2.0;
 const MAX_POSSIBLE_LEGAL_MOVES: usize = 32; // technically 28 but rounding off to nearest two powers
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq,Debug)]
 enum PieceType {
     WK,
     BK,
@@ -19,6 +20,16 @@ enum PieceType {
     WB,
     BB,
     E,
+}
+
+enum GameCondition{
+    Running,
+    Draw,
+    WhiteWin,
+    BlackWin,
+    StartScreen,
+    Quit,
+    Restart
 }
 
 use PieceType::*;
@@ -59,7 +70,7 @@ fn draw_piece(spritesheet: &Texture2D, piecetype: &PieceType, posx: usize, posy:
     }
 }
 
-struct Board {
+struct Board{
     width: usize,
     height: usize,
     pieces: Vec<Vec<PieceType>>,
@@ -71,7 +82,7 @@ struct Board {
 }
 
 impl Board {
-    fn new(sprite_sheet: Texture2D) -> Self {
+    fn new(sprite_sheet: Texture2D) -> Self{
         Board {
             width: 8,
             height: 8,
@@ -164,13 +175,13 @@ impl Board {
         let mut curr_y = (y + 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == BB
-                    || self.pieces[curr_y as usize][curr_x as usize] == BQ
+                || self.pieces[curr_y as usize][curr_x as usize] == BQ
                 {
                     return true;
                 } else {
@@ -184,13 +195,13 @@ impl Board {
         let mut curr_y = (y + 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == BB
-                    || self.pieces[curr_y as usize][curr_x as usize] == BQ
+                || self.pieces[curr_y as usize][curr_x as usize] == BQ
                 {
                     return true;
                 } else {
@@ -204,13 +215,13 @@ impl Board {
         let mut curr_y = (y - 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == BB
-                    || self.pieces[curr_y as usize][curr_x as usize] == BQ
+                || self.pieces[curr_y as usize][curr_x as usize] == BQ
                 {
                     return true;
                 } else {
@@ -224,13 +235,13 @@ impl Board {
         let mut curr_y = (y - 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == BB
-                    || self.pieces[curr_y as usize][curr_x as usize] == BQ
+                || self.pieces[curr_y as usize][curr_x as usize] == BQ
                 {
                     return true;
                 } else {
@@ -258,10 +269,10 @@ impl Board {
 
         for diff in diffs {
             if curr_x + diff.0 < self.width as i32
-                && curr_x + diff.0 >= 0
-                && curr_y + diff.1 < self.height as i32
-                && curr_y + diff.1 >= 0
-                && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == BN
+            && curr_x + diff.0 >= 0
+            && curr_y + diff.1 < self.height as i32
+            && curr_y + diff.1 >= 0
+            && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == BN
             {
                 return true;
             }
@@ -281,10 +292,10 @@ impl Board {
 
         for diff in diffs {
             if curr_x + diff.0 < self.width as i32
-                && curr_x + diff.0 >= 0
-                && curr_y + diff.1 < self.height as i32
-                && curr_y + diff.1 >= 0
-                && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == BK
+            && curr_x + diff.0 >= 0
+            && curr_y + diff.1 < self.height as i32
+            && curr_y + diff.1 >= 0
+            && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == BK
             {
                 return true;
             }
@@ -293,10 +304,10 @@ impl Board {
         // pawn check
 
         if (curr_y - 1) >= 0
-            && (((curr_x - 1) >= 0
-                && self.pieces[(curr_y - 1) as usize][(curr_x - 1) as usize] == B)
-                || curr_x + 1 < self.width as i32
-                    && self.pieces[(curr_y - 1) as usize][(curr_x + 1) as usize] == B)
+        && (((curr_x - 1) >= 0
+        && self.pieces[(curr_y - 1) as usize][(curr_x - 1) as usize] == B)
+        || curr_x + 1 < self.width as i32
+        && self.pieces[(curr_y - 1) as usize][(curr_x + 1) as usize] == B)
         {
             return true;
         }
@@ -347,13 +358,13 @@ impl Board {
         let mut curr_y = (y + 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == WB
-                    || self.pieces[curr_y as usize][curr_x as usize] == WQ
+                || self.pieces[curr_y as usize][curr_x as usize] == WQ
                 {
                     return true;
                 } else {
@@ -367,13 +378,13 @@ impl Board {
         let mut curr_y = (y + 1) as i32;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == WB
-                    || self.pieces[curr_y as usize][curr_x as usize] == WQ
+                || self.pieces[curr_y as usize][curr_x as usize] == WQ
                 {
                     return true;
                 } else {
@@ -387,13 +398,13 @@ impl Board {
         let mut curr_y = y as i32 - 1;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == WB
-                    || self.pieces[curr_y as usize][curr_x as usize] == WQ
+                || self.pieces[curr_y as usize][curr_x as usize] == WQ
                 {
                     return true;
                 } else {
@@ -407,13 +418,13 @@ impl Board {
         let mut curr_y = y as i32 - 1;
 
         while curr_x < (self.width as i32)
-            && curr_y < (self.height as i32)
-            && curr_y >= 0
-            && curr_x >= 0
+        && curr_y < (self.height as i32)
+        && curr_y >= 0
+        && curr_x >= 0
         {
             if self.pieces[curr_y as usize][curr_x as usize] != E {
                 if self.pieces[curr_y as usize][curr_x as usize] == WB
-                    || self.pieces[curr_y as usize][curr_x as usize] == WQ
+                || self.pieces[curr_y as usize][curr_x as usize] == WQ
                 {
                     return true;
                 } else {
@@ -441,10 +452,10 @@ impl Board {
 
         for diff in diffs {
             if curr_x + diff.0 < self.width as i32
-                && curr_x + diff.0 >= 0
-                && curr_y + diff.1 < self.height as i32
-                && curr_y + diff.1 >= 0
-                && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == WN
+            && curr_x + diff.0 >= 0
+            && curr_y + diff.1 < self.height as i32
+            && curr_y + diff.1 >= 0
+            && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == WN
             {
                 return true;
             }
@@ -464,10 +475,10 @@ impl Board {
 
         for diff in diffs {
             if curr_x + diff.0 < self.width as i32
-                && curr_x + diff.0 >= 0
-                && curr_y + diff.1 < self.height as i32
-                && curr_y + diff.1 >= 0
-                && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == WK
+            && curr_x + diff.0 >= 0
+            && curr_y + diff.1 < self.height as i32
+            && curr_y + diff.1 >= 0
+            && self.pieces[(curr_y + diff.1) as usize][(curr_x + diff.0) as usize] == WK
             {
                 return true;
             }
@@ -476,10 +487,10 @@ impl Board {
         // pawn check
 
         if (curr_y + 1) < self.height as i32
-            && (((curr_x - 1) >= 0
-                && self.pieces[(curr_y + 1) as usize][(curr_x - 1) as usize] == W)
-                || (curr_x + 1 < self.width as i32
-                    && self.pieces[(curr_y + 1) as usize][(curr_x + 1) as usize] == W))
+        && (((curr_x - 1) >= 0
+        && self.pieces[(curr_y + 1) as usize][(curr_x - 1) as usize] == W)
+        || (curr_x + 1 < self.width as i32
+        && self.pieces[(curr_y + 1) as usize][(curr_x + 1) as usize] == W))
         {
             return true;
         }
@@ -572,15 +583,15 @@ impl Board {
                     let dest_x: i32 = curr_x + diff.0;
                     let dest_y: i32 = curr_y + diff.1;
                     if dest_x < self.width as i32
-                        && dest_x >= 0
-                        && dest_y < self.height as i32
-                        && dest_y >= 0
-                        && self.is_legal_move(
-                            curr_x as usize,
-                            curr_y as usize,
-                            dest_x as usize,
-                            dest_y as usize,
-                        )
+                    && dest_x >= 0
+                    && dest_y < self.height as i32
+                    && dest_y >= 0
+                    && self.is_legal_move(
+                        curr_x as usize,
+                        curr_y as usize,
+                        dest_x as usize,
+                        dest_y as usize,
+                    )
                     {
                         legal_moves.push((dest_x as usize, dest_y as usize));
                     }
@@ -602,15 +613,15 @@ impl Board {
                     let dest_x: i32 = curr_x + diff.0;
                     let dest_y: i32 = curr_y + diff.1;
                     if dest_x < self.width as i32
-                        && dest_x >= 0
-                        && dest_y < self.height as i32
-                        && dest_y >= 0
-                        && self.is_legal_move(
-                            curr_x as usize,
-                            curr_y as usize,
-                            dest_x as usize,
-                            dest_y as usize,
-                        )
+                    && dest_x >= 0
+                    && dest_y < self.height as i32
+                    && dest_y >= 0
+                    && self.is_legal_move(
+                        curr_x as usize,
+                        curr_y as usize,
+                        dest_x as usize,
+                        dest_y as usize,
+                    )
                     {
                         legal_moves.push((dest_x as usize, dest_y as usize));
                     }
@@ -657,9 +668,9 @@ impl Board {
                     let mut dest_x = src_x as i32 + move_dir.0;
                     let mut dest_y = src_y as i32 + move_dir.1;
                     while dest_x >= 0
-                        && dest_x < self.width as i32
-                        && dest_y >= 0
-                        && dest_y < self.height as i32
+                    && dest_x < self.width as i32
+                    && dest_y >= 0
+                    && dest_y < self.height as i32
                     {
                         if self.is_legal_move(src_x, src_y, dest_x as usize, dest_y as usize) {
                             legal_moves.push((dest_x as usize, dest_y as usize));
@@ -681,7 +692,7 @@ impl Board {
                         break;
                     }
                 }
-                for i in src_y + 1..self.width {
+                for i in src_x + 1..self.width {
                     if self.is_legal_move(src_x, src_y, i, src_y) {
                         legal_moves.push((i, src_y));
                     }
@@ -712,9 +723,9 @@ impl Board {
                     let mut dest_x = src_x as i32 + move_dir.0;
                     let mut dest_y = src_y as i32 + move_dir.1;
                     while dest_x >= 0
-                        && dest_x < self.width as i32
-                        && dest_y >= 0
-                        && dest_y < self.height as i32
+                    && dest_x < self.width as i32
+                    && dest_y >= 0
+                    && dest_y < self.height as i32
                     {
                         if self.is_legal_move(src_x, src_y, dest_x as usize, dest_y as usize) {
                             legal_moves.push((dest_x as usize, dest_y as usize));
@@ -729,17 +740,17 @@ impl Board {
             }
             W => {
                 // one move forward
-                
+
                 if self.pieces[src_y - 1][src_x] == E
-                    && self.is_legal_move(src_x, src_y, src_y - 1, src_x)
+                && self.is_legal_move(src_x, src_y, src_x, src_y-1)
                 {
                     legal_moves.push((src_x, src_y - 1));
                 }
                 // two move forward
                 if src_y == 6
-                    && self.pieces[src_y - 1][src_x] == E
-                    && self.pieces[src_y - 2][src_x] == E
-                    && self.is_legal_move(src_x, src_y, src_y - 2, src_x)
+                && self.pieces[src_y - 1][src_x] == E
+                && self.pieces[src_y - 2][src_x] == E
+                && self.is_legal_move(src_x, src_y, src_x, src_y-2)
                 {
                     legal_moves.push((src_x, src_y - 2));
                 }
@@ -747,14 +758,14 @@ impl Board {
                 // capture
 
                 if (curr_x - 1) >= 0
-                    && self.is_black_piece(src_x - 1, src_y - 1)
-                    && self.is_legal_move(src_x, src_y, src_x - 1, src_y - 1)
+                && self.is_black_piece(src_x - 1, src_y - 1)
+                && self.is_legal_move(src_x, src_y, src_x - 1, src_y - 1)
                 {
                     legal_moves.push((src_x - 1, src_y - 1));
                 }
                 if (curr_x + 1) < self.width as i32
-                    && self.is_black_piece(src_x + 1, src_y - 1)
-                    && self.is_legal_move(src_x, src_y, src_x + 1, src_y - 1)
+                && self.is_black_piece(src_x + 1, src_y - 1)
+                && self.is_legal_move(src_x, src_y, src_x + 1, src_y - 1)
                 {
                     legal_moves.push((src_x + 1, src_y - 1));
                 }
@@ -766,15 +777,15 @@ impl Board {
             }
             B => {
                 if self.pieces[src_y + 1][src_x] == E
-                    && self.is_legal_move(src_x, src_y, src_y + 1, src_x)
+                && self.is_legal_move(src_x, src_y, src_x, src_y+1)
                 {
                     legal_moves.push((src_x, src_y + 1));
                 }
                 // two move forward
                 if src_y == 1
-                    && self.pieces[src_y + 1][src_x] == E
-                    && self.pieces[src_y + 2][src_x] == E
-                    && self.is_legal_move(src_x, src_y, src_y + 2, src_x)
+                && self.pieces[src_y + 1][src_x] == E
+                && self.pieces[src_y + 2][src_x] == E
+                && self.is_legal_move(src_x, src_y,src_x , src_y + 2)
                 {
                     legal_moves.push((src_x, src_y + 2));
                 }
@@ -782,14 +793,14 @@ impl Board {
                 // capture
 
                 if (curr_x - 1) >= 0
-                    && self.is_white_piece(src_x - 1, src_y + 1)
-                    && self.is_legal_move(src_x, src_y, src_x - 1, src_y + 1)
+                && self.is_white_piece(src_x - 1, src_y + 1)
+                && self.is_legal_move(src_x, src_y, src_x - 1, src_y + 1)
                 {
                     legal_moves.push((src_x - 1, src_y + 1));
                 }
                 if (curr_x + 1) < self.width as i32
-                    && self.is_white_piece(src_x + 1, src_y + 1)
-                    && self.is_legal_move(src_x, src_y, src_x + 1, src_y + 1)
+                && self.is_white_piece(src_x + 1, src_y + 1)
+                && self.is_legal_move(src_x, src_y, src_x + 1, src_y + 1)
                 {
                     legal_moves.push((src_x + 1, src_y + 1));
                 }
@@ -805,39 +816,33 @@ impl Board {
         legal_moves
     }
 
-    fn is_white_win(&mut self) -> bool{
-        if !self.is_black_king_in_check(self.black_king_x, self.black_king_y){
-            return false;
-        }
+    fn does_black_have_legal_moves(&mut self) -> bool{
 
         for i in 0..self.width{
             for j in 0..self.height{
                 if self.is_black_piece(i,j){
                     let legal_moves = self.get_legal_moves_for_piece(i,j);
-                    if legal_moves.len()!=0{
-                        return false;
+                    if !legal_moves.is_empty(){
+                        return true;
                     }
                 }
             }
         }
-        true
+        false
     }
-    fn is_black_win(&mut self) -> bool{
-        if !self.is_white_king_in_check(self.white_king_x, self.white_king_y){
-            return false;
-        }
+    fn does_white_have_legal_moves(&mut self) -> bool{
 
         for i in 0..self.width{
             for j in 0..self.height{
                 if self.is_white_piece(i,j){
                     let legal_moves = self.get_legal_moves_for_piece(i,j);
-                    if legal_moves.len()!=0{
-                        return false;
+                    if !legal_moves.is_empty(){
+                        return true;
                     }
                 }
             }
         }
-        true
+        false
     }
 }
 
@@ -864,6 +869,7 @@ struct Game {
     selected_x: usize,
     selected_y: usize,
     legal_moves: Vec<(usize, usize)>,
+    game_condition:GameCondition
 }
 
 impl Game {
@@ -875,6 +881,7 @@ impl Game {
             selected_x: 0,
             selected_y: 0,
             legal_moves: Vec::new(),
+            game_condition:GameCondition::StartScreen
         }
     }
 
@@ -907,6 +914,33 @@ impl Game {
         }
     }
     fn run(&mut self) {
+
+        let has_legal_moves = match self.turn{
+            Turn::White=>self.board.does_white_have_legal_moves(),
+            Turn::Black=>self.board.does_black_have_legal_moves()
+        };
+
+        if !has_legal_moves {
+            match self.turn{
+                Turn::White=>{
+                    if self.board.is_white_king_in_check(self.board.white_king_x,self.board.white_king_y){
+                        self.game_condition = GameCondition::BlackWin;
+                    }
+                    else{
+                        self.game_condition = GameCondition::Draw;
+                    }
+                },
+                Turn::Black=>{
+                    if self.board.is_black_king_in_check(self.board.black_king_x,self.board.black_king_y){
+                        self.game_condition = GameCondition::WhiteWin;
+                    }
+                    else{
+                        self.game_condition = GameCondition::Draw;
+                    }
+                },
+            } 
+        }
+
         self.board.draw();
 
         if self.selected {
@@ -934,11 +968,11 @@ impl Game {
             } else if x == self.selected_x && y == self.selected_y {
                 self.deselect_and_clear_legal_moves();
             } else if (self.board.is_black_piece(x, y)
-                && self.board.is_black_piece(self.selected_x, self.selected_y) &&
-                self.turn == Turn::Black) ||
-                (self.board.is_white_piece(x, y)
-                && self.board.is_white_piece(self.selected_x, self.selected_y)&&
-                self.turn == Turn::White){
+            && self.board.is_black_piece(self.selected_x, self.selected_y) &&
+            self.turn == Turn::Black) ||
+            (self.board.is_white_piece(x, y)
+            && self.board.is_white_piece(self.selected_x, self.selected_y)&&
+            self.turn == Turn::White){
                 self.change_selected_and_fetch_legal_moves(x, y);
             } else {
                 if self.legal_moves.contains(&(x, y)) {
@@ -952,6 +986,52 @@ impl Game {
             }
         }
     }
+    fn screen(&mut self){
+        let win_size = vec2(400., 200.);
+        let win_pos = vec2(
+            (screen_width() - win_size.x) / 2.0,
+            (screen_height() - win_size.y) / 2.0,
+        );
+
+        widgets::Window::new(hash!("screen"), win_pos, win_size)
+            .label("Welcome to the Chess")
+            .titlebar(false)
+            .ui(&mut *root_ui(), |ui| {
+                let center = |y| Vec2::new((win_size.x - 200.) / 2.0, y);
+
+                let message = match self.game_condition{
+                    GameCondition::StartScreen=>"welcome to chess",
+                    GameCondition::Draw=>"Draw",
+                    GameCondition::BlackWin=>"Black Won",
+                    GameCondition::WhiteWin=>"White Won",
+                    _=>"Error"
+                };
+
+                ui.label(center(40.), message);
+                ui.separator();
+                let first_button_text = match self.game_condition{
+                    GameCondition::StartScreen=>"Start Game",
+                    GameCondition::Draw=>"Back to Start Screen",
+                    GameCondition::BlackWin=>"Back to Start Screen",
+                    GameCondition::WhiteWin=>"Back to start screen",
+                    _=>"Erro"
+                };
+
+                if ui.button(center(100.), first_button_text) {
+                    match self.game_condition{
+                        GameCondition::StartScreen=>{
+                            self.game_condition=GameCondition::Running
+                        },
+                        _=>{
+                            self.game_condition = GameCondition::Restart; 
+                        }
+                    };
+                }
+                if ui.button(center(120.0),"quit"){
+                    self.game_condition = GameCondition::Quit;
+                }
+            });
+    }
 }
 
 #[macroquad::main("Chess")]
@@ -959,10 +1039,31 @@ async fn main() {
     let sprite_sheet = load_texture("./../assets/Chess_Pieces_Sprite.png")
         .await
         .unwrap();
-    let mut game = Game::new(sprite_sheet);
+    let mut game = Game::new(sprite_sheet.clone());
     loop {
         clear_background(BLACK);
-        game.run();
+        match game.game_condition{
+            GameCondition::StartScreen=> game.screen(),
+            GameCondition::Running=>game.run(),
+            // GameCondition::Draw=>game.draw(),
+            // GameCondition::WhiteWin=>game.declare_winner(),
+            // GameCondition::BlackWin=>game.declare_winner()
+            GameCondition::Draw =>{
+                game.screen();
+            }
+            GameCondition::WhiteWin =>{
+                game.screen();
+            }
+            GameCondition::BlackWin =>{
+                game.screen();
+            }
+            GameCondition::Quit=>{
+                break;
+            }
+            GameCondition::Restart=>{
+                game = Game::new(sprite_sheet.clone());
+            }
+        }
         next_frame().await
     }
 }
