@@ -6,8 +6,9 @@ This is chess game written in rust
 - [x]  check condition
 - [x]  kings movement restriction
 - [x]  winning condition
-- [ ]  draw conditions
-- [ ]  castling
+- [x]  normal draw condition
+- [ ]  additional draw conditions
+- [x]  castling
 - [ ]  en-passant
 - [ ]  ui for players
 - [ ]  removed pieces

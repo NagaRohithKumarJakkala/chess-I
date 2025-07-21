@@ -79,6 +79,12 @@ struct Board{
     white_king_y: usize,
     black_king_x: usize,
     black_king_y: usize,
+    is_white_king_moved:bool,
+    is_black_king_moved:bool,
+    is_left_white_rook_moved:bool,
+    is_right_white_rook_moved:bool,
+    is_left_black_rook_moved:bool,
+    is_right_black_rook_moved:bool
 }
 
 impl Board {
@@ -101,6 +107,13 @@ impl Board {
             white_king_y: 7,
             black_king_x: 4,
             black_king_y: 0,
+            is_white_king_moved:false,
+            is_black_king_moved:false,
+            is_left_white_rook_moved:false,
+            is_right_white_rook_moved:false,
+            is_left_black_rook_moved:false,
+            is_right_black_rook_moved:false
+            
         }
     }
     fn draw(&self) {
@@ -596,6 +609,46 @@ impl Board {
                         legal_moves.push((dest_x as usize, dest_y as usize));
                     }
                 }
+
+                if self.pieces[src_y][src_x] == WK &&
+                src_y == self.width-1 && src_x == 4 &&
+                    !self.is_white_king_moved{
+                        
+                    if !self.is_right_white_rook_moved &&
+                        self.pieces[src_y][5]==E&&
+                        self.pieces[src_y][6]==E &&
+        self.is_legal_move(src_x, src_y, 6, src_y)&&
+        self.is_legal_move(src_x, src_y, 5, src_y){
+                            legal_moves.push((6,src_y)) ;
+                    }
+                    if !self.is_left_white_rook_moved  &&
+                        self.pieces[src_y][3] ==E &&
+                        self.pieces[src_y][2] ==E &&
+                        self.is_legal_move(src_x, src_y, 3, src_y)&&
+                        self.is_legal_move(src_x, src_y, 2, src_y){
+                            legal_moves.push((2,src_y)) ;
+                    }
+                    
+                }
+                if self.pieces[src_y][src_x]==BK&&
+                src_y == 0 && src_x == 4 &&
+                    !self.is_black_king_moved{
+                    if !self.is_right_black_rook_moved &&
+                        self.pieces[src_y][5]==E&&
+                        self.pieces[src_y][6]==E &&
+        self.is_legal_move(src_x, src_y, 6, src_y)&&
+        self.is_legal_move(src_x, src_y, 5, src_y){
+                            legal_moves.push((6,src_y)) ;
+                    }
+                    if !self.is_left_black_rook_moved  &&
+                        self.pieces[src_y][3] ==E &&
+                        self.pieces[src_y][2] ==E &&
+                        self.is_legal_move(src_x, src_y, 3, src_y)&&
+                        self.is_legal_move(src_x, src_y, 2, src_y){
+                            legal_moves.push((2,src_y)) ;
+                    }
+
+                }
             }
             WN | BN => {
                 let diffs = [
@@ -904,6 +957,61 @@ impl Game {
         } else if selected_piece == B && y == self.board.height - 1 {
             selected_piece = BQ;
         }
+
+        if selected_piece == WK{
+            if x == self.board.width -2 && y == self.board.height-1{
+                self.board.pieces[y][x-1]=WR;
+                self.board.pieces[y][x]=WK;
+                self.board.pieces[y][x+1]=E;
+            }
+            if x == 2 && y == self.board.height-1{
+                self.board.pieces[y][x+1]=WR;
+                self.board.pieces[y][x]=WK;
+                self.board.pieces[y][0]=E;
+            }
+        }
+        if selected_piece == BK{
+            if x == self.board.width -2 && y == 0{
+                self.board.pieces[y][x-1]=BR;
+                self.board.pieces[y][x]=BK;
+                self.board.pieces[y][x+1]=E;
+            }
+            if x == 2 && y == 0{
+                self.board.pieces[y][x+1]=BR;
+                self.board.pieces[y][x]=BK;
+                self.board.pieces[y][0]=E;
+            }
+        }
+
+        match selected_piece{
+            WK=>{
+                self.board.is_white_king_moved=true;
+                self.board.white_king_x = x;
+                self.board.white_king_y = y;
+            },
+            BK=>{
+                self.board.is_black_king_moved=true;
+                self.board.black_king_x = x;
+                self.board.black_king_y = y;
+            },
+            WR=>{
+                if self.selected_x == 0{
+                    self.board.is_left_white_rook_moved = true;
+                }
+                if self.selected_x == self.board.width -1{
+                    self.board.is_right_white_rook_moved = true;
+                }
+            },
+            BR=>{
+                if self.selected_x == 0{
+                    self.board.is_left_black_rook_moved = true;
+                }
+                if self.selected_x == self.board.width -1{
+                    self.board.is_right_black_rook_moved = true;
+                }
+            },
+            _=>{},
+        }
         self.board.pieces[y][x] = selected_piece;
         self.board.pieces[self.selected_y][self.selected_x] = E;
     }
@@ -1045,9 +1153,6 @@ async fn main() {
         match game.game_condition{
             GameCondition::StartScreen=> game.screen(),
             GameCondition::Running=>game.run(),
-            // GameCondition::Draw=>game.draw(),
-            // GameCondition::WhiteWin=>game.declare_winner(),
-            // GameCondition::BlackWin=>game.declare_winner()
             GameCondition::Draw =>{
                 game.screen();
             }
